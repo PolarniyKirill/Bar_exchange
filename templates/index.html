@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Тематический бар</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Меню напитков</h1>
+    <table>
+        <tr>
+            <th>Название</th>
+            <th>Изначальная цена</th>
+            <th>Текущая цена</th>
+            <th>Процент от изначальной цены</th>
+            <th>Выбрать</th>
+        </tr>
+        {% for drink in drinks %}
+        <tr>
+            <td>{{ drink[1] }}</td>
+            <td>{{ drink[2] }}</td>
+            <td>{{ drink[3] }}</td>
+            <td id="percentage_{{ drink[0] }}">-</td>
+            <td><a href="{{ url_for('update', drink_name=drink[1]) }}">Выбрать</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <br>
+    <a href="{{ url_for('add') }}">Добавить новый напиток</a>
+    <br>
+    <form method="get" action="{{ url_for('reset') }}">
+        <button type="submit">Вернуть к изначальным значениям</button>
+    </form>
+
+    <br>
+    <form method="get" action="{{ url_for('generate_report') }}">
+        <button type="submit">Сформировать отчет</button>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var rows = document.querySelectorAll("table tr");
+            rows.forEach(function(row, index) {
+                if (index > 0) { // Пропускаем заголовок таблицы
+                    var cells = row.cells;
+                    var initialPrice = parseFloat(cells[1].innerText);
+                    var currentPrice = parseFloat(cells[2].innerText);
+                    var percentageCell = cells[3];
+                    
+                    if (!isNaN(initialPrice) && !isNaN(currentPrice)) {
+                        var percentage = ((currentPrice / initialPrice) * 100).toFixed(2);
+                        percentageCell.innerText = percentage + "%";
+                    } else {
+                        percentageCell.innerText = "-";
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

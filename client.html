@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Клиентский интерфейс</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1>Меню напитков</h1>
+    <table id="drinksTable">
+        <tr>
+            <th>Название</th>
+            <th>Изначальная цена</th>
+            <th>Текущая цена</th>
+            <th>Процент от изначальной цены</th>
+        </tr>
+    </table>
+
+    <script>
+        function fetchDrinks() {
+            fetch('/api/drinks')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('drinksTable');
+                    // Очистить старые строки (кроме заголовка)
+                    while (table.rows.length > 1) {
+                        table.deleteRow(1);
+                    }
+                    data.forEach(drink => {
+                        const row = table.insertRow();
+                        const cell1 = row.insertCell(0);
+                        const cell2 = row.insertCell(1);
+                        const cell3 = row.insertCell(2);
+                        const cell4 = row.insertCell(3);
+
+                        cell1.textContent = drink.name;
+                        cell2.textContent = drink.initial_price.toFixed(2);
+                        cell3.textContent = drink.current_price.toFixed(2);
+                        const percentage = ((drink.current_price / drink.initial_price) * 100).toFixed(2);
+                        cell4.textContent = percentage + '%';
+                    });
+                })
+                .catch(error => console.error('Error fetching drinks:', error));
+        }
+
+        // Запрашиваем данные при загрузке страницы и каждые 5 секунд
+        window.onload = function() {
+            fetchDrinks();
+            setInterval(fetchDrinks, 5000);
+        };
+    </script>
+</body>
+</html>
