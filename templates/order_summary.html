@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Итог заказа</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Итог заказа</h1>
+    <table>
+        <tr>
+            <th>Название</th>
+            <th>Количество</th>
+            <th>Цена за единицу</th>
+            <th>Общая стоимость</th>
+            <th>Удалить</th>
+        </tr>
+        {% for item in order %}
+        <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.price | round(2) }}</td>
+            <td>{{ item.total_price | round(2) }}</td>
+            <td><a href="{{ url_for('remove_from_order', drink_name=item.name) }}">Удалить</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Общая сумма заказа: {{ total_sum }} руб.</h2>
+
+    <form method="post" action="{{ url_for('pay_order') }}">
+        <button type="submit">Оплатить заказ</button>
+    </form>
+
+    <br>
+    <a href="{{ url_for('new_order') }}">Вернуться к выбору напитков</a>
+    <br>
+    <a href="{{ url_for('index') }}">Вернуться к меню</a>
+</body>
+</html>

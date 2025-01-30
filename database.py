@@ -1,6 +1,5 @@
 import sqlite3
 import logging
-import pandas as pd
 
 # Настройка логирования
 logging.basicConfig(level=logging.DEBUG)
@@ -43,6 +42,17 @@ def init_db():
                 quantity INTEGER NOT NULL,
                 price REAL NOT NULL,
                 FOREIGN KEY (drink_id) REFERENCES drinks(id)
+            )
+        ''')
+        
+        # Создаем таблицу orders, если она не существует
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                drink_name TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                total_price REAL NOT NULL,
+                order_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
@@ -123,26 +133,103 @@ def generate_report():
         conn = sqlite3.connect('bar.db')
         cursor = conn.cursor()
         
-        # Получаем все продажи
+        # Получаем все продажи с количеством и суммой выручки
         cursor.execute('''
-            SELECT d.name, SUM(s.quantity), AVG(s.price), SUM(s.quantity * s.price)
+            SELECT d.name, SUM(s.quantity), SUM(s.quantity * s.price)
             FROM sales s
             JOIN drinks d ON s.drink_id = d.id
             GROUP BY d.name
         ''')
         sales_data = cursor.fetchall()
+        logger.debug(f"Sales data fetched: {sales_data}")
         
-        # Получаем общую выручку
+        # Получаем общую выручку и общее количество проданных напитков
         cursor.execute('''
-            SELECT SUM(quantity * price) FROM sales
+            SELECT SUM(quantity), SUM(quantity * price) FROM sales
         ''')
-        total_revenue = cursor.fetchone()[0]
-        if total_revenue is None:
-            total_revenue = 0
+        totals = cursor.fetchone()
+        total_quantity = totals[0] if totals[0] is not None else 0
+        total_revenue = totals[1] if totals[1] is not None else 0
+        logger.debug(f"Total quantity fetched: {total_quantity}")
+        logger.debug(f"Total revenue fetched: {total_revenue}")
         
         conn.close()
         
-        return sales_data, total_revenue
+        return sales_data, total_quantity, total_revenue
     except Exception as e:
         logger.error(f"Error generating report: {e}")
-        return [], 0
+        return [], 0, 0
+
+def clear_sales():
+    try:
+        conn = sqlite3.connect('bar.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM sales")
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error clearing sales: {e}")
+
+def delete_drink(drink_name):
+    try:
+        conn = sqlite3.connect('bar.db')
+        cursor = conn.cursor()
+        
+        # Удаляем все записи продаж для данного напитка
+        cursor.execute("SELECT id FROM drinks WHERE name = ?", (drink_name,))
+        drink = cursor.fetchone()
+        if drink:
+            drink_id = drink[0]
+            cursor.execute("DELETE FROM sales WHERE drink_id = ?", (drink_id,))
+            
+            # Удаляем сам напиток
+            cursor.execute("DELETE FROM drinks WHERE name = ?", (drink_name,))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error deleting drink: {e}")
+
+def update_drink(old_name, new_name, new_initial_price):
+    try:
+        conn = sqlite3.connect('bar.db')
+        cursor = conn.cursor()
+        
+        # Обновляем название и изначальную цену напитка
+        cursor.execute("UPDATE drinks SET name = ?, initial_price = ?, current_price = ? WHERE name = ?", 
+                       (new_name, new_initial_price, new_initial_price, old_name))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error updating drink: {e}")
+
+def create_order(order_items):
+    try:
+        conn = sqlite3.connect('bar.db')
+        cursor = conn.cursor()
+        
+        for item in order_items:
+            cursor.execute("INSERT INTO orders (drink_name, quantity, total_price) VALUES (?, ?, ?)", 
+                           (item['name'], item['quantity'], item['total_price']))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error creating order: {e}")
+
+def get_current_prices():
+    try:
+        conn = sqlite3.connect('bar.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id, name, current_price FROM drinks")
+        drinks = cursor.fetchall()
+        
+        conn.close()
+        return drinks
+    except Exception as e:
+        logger.error(f"Error getting current prices: {e}")
+        return []

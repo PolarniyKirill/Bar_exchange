@@ -24,14 +24,18 @@
             <th>Текущая цена</th>
             <th>Процент от изначальной цены</th>
             <th>Выбрать</th>
+            <th>Изменить</th>
+            <th>Удалить</th>
         </tr>
         {% for drink in drinks %}
         <tr>
             <td>{{ drink[1] }}</td>
             <td>{{ drink[2] }}</td>
-            <td>{{ drink[3] }}</td>
+            <td id="current_price_{{ drink[0] }}">{{ drink[3] | round(2) }}</td>
             <td id="percentage_{{ drink[0] }}">-</td>
             <td><a href="{{ url_for('update', drink_name=drink[1]) }}">Выбрать</a></td>
+            <td><a href="{{ url_for('edit', old_name=drink[1]) }}">Изменить</a></td>
+            <td><a href="{{ url_for('delete', drink_name=drink[1]) }}">Удалить</a></td>
         </tr>
         {% endfor %}
     </table>
@@ -41,6 +45,11 @@
     <br>
     <form method="get" action="{{ url_for('reset') }}">
         <button type="submit">Вернуть к изначальным значениям</button>
+    </form>
+
+    <br>
+    <form method="get" action="{{ url_for('new_order') }}">
+        <button type="submit">Новый заказ</button>
     </form>
 
     <br>
